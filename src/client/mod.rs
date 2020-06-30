@@ -43,22 +43,22 @@ mod tests {
         let cli = create_cli();
         let lock_key = LockKey::from(rs_ttb::random_string(12));
 
-        let re = cli.is_first(lock_key.clone()).await;
+        let re = cli.lock(lock_key.clone()).await;
         assert!(re.is_ok(), "{:?}", re);
 
-        let re = cli.is_first(lock_key.clone()).await;
+        let re = cli.lock(lock_key.clone()).await;
         assert!(re.is_err(), "{:?}", re);
 
-        let re = cli.end(lock_key.clone()).await;
+        let re = cli.unlock(lock_key.clone()).await;
         assert!(re.is_ok(), "{:?}", re);
 
-        let re = cli.is_first(lock_key.clone()).await;
+        let re = cli.lock(lock_key.clone()).await;
         assert!(re.is_ok(), "{:?}", re);
 
-        let re = cli.end(lock_key.clone()).await;
+        let re = cli.unlock(lock_key.clone()).await;
         assert!(re.is_ok(), "{:?}", re);
 
-        let re = cli.end(lock_key.clone()).await;
+        let re = cli.unlock(lock_key.clone()).await;
         assert!(re.is_err(), "{:?}", re);
     }
 

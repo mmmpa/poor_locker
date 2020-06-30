@@ -37,11 +37,6 @@ pub trait Locker: Clone + Send + Sync + 'static {
         }
     }
 
-    async fn end(&self, key: LockKey) -> LockerResult<()> {
-        self.unlock(key).await?;
-        Ok(())
-    }
-
     async fn wait_and_work<F, R, Fut>(&self, key: LockKey, secs: u64, f: F) -> LockerResult<R>
     where
         F: FnOnce() -> Fut + Send,
@@ -50,13 +45,8 @@ pub trait Locker: Clone + Send + Sync + 'static {
     {
         self.wait(key.clone(), secs).await?;
         let re = f().await;
-        self.end(key).await?;
+        self.unlock(key).await?;
         Ok(re)
-    }
-
-    async fn is_first(&self, key: LockKey) -> LockerResult<()> {
-        self.store().lock(key).await?;
-        Ok(())
     }
 }
 
