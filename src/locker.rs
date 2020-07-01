@@ -1,6 +1,7 @@
 use crate::{LockKey, LockerError, LockerResult};
 use async_trait::async_trait;
 use futures::Future;
+use std::cmp::min;
 use tokio::macros::support::Pin;
 use tokio::time::Duration;
 
@@ -10,6 +11,11 @@ pub trait Locker: Clone + Send + Sync + 'static {
 
     fn store(&self) -> &Self::LockerStore;
     fn delay(&self) -> u64;
+
+    /// Just an alias to lock.
+    async fn allow_only_first_comer(&self, key: LockKey) -> LockerResult<()> {
+        self.lock(key).await
+    }
 
     async fn lock(&self, key: LockKey) -> LockerResult<()> {
         self.store().lock(key).await
@@ -21,23 +27,32 @@ pub trait Locker: Clone + Send + Sync + 'static {
 
     async fn wait(&self, key: LockKey, mut ms: u64) -> LockerResult<()> {
         let mut rest = ms;
+        let mut delay = self.delay();
 
         loop {
             if let Ok(_) = self.lock(key.clone()).await {
                 return Ok(());
             }
 
-            tokio::time::delay_for(Duration::from_millis(self.delay())).await;
-
-            if rest < self.delay() {
+            if rest == 0 {
                 return Err(LockerError::Timeout);
             }
 
-            rest -= self.delay();
+            delay = min(rest, delay);
+
+            tokio::time::delay_for(Duration::from_millis(delay)).await;
+
+            if rest <= delay {
+                rest = 0;
+            } else {
+                rest -= delay;
+            }
         }
+
+        unreachable!()
     }
 
-    async fn wait_and_work<F, R, Fut>(&self, key: LockKey, secs: u64, f: F) -> LockerResult<R>
+    async fn work_with_wait_lock<F, R, Fut>(&self, key: LockKey, secs: u64, f: F) -> LockerResult<R>
     where
         F: FnOnce() -> Fut + Send,
         Fut: Future<Output = R> + Send,

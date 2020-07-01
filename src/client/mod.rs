@@ -128,7 +128,7 @@ mod tests {
             let key = lock_key.clone();
             let mut a = a.clone();
             tokio::spawn(async move {
-                cli.wait_and_work(key, 10, || async {
+                cli.work_with_wait_lock(key, 10, || async {
                     tokio::time::delay_for(Duration::from_millis(20)).await;
                     a.write().await.push(11);
                 })
@@ -142,7 +142,7 @@ mod tests {
             let mut a = a.clone();
             tokio::spawn(async move {
                 tokio::time::delay_for(Duration::from_millis(10)).await;
-                cli.wait_and_work(key, 100, || async {
+                cli.work_with_wait_lock(key, 100, || async {
                     a.write().await.push(24);
                 })
                 .await;

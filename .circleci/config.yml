@@ -1,0 +1,38 @@
+---
+version: 2
+jobs:
+  build:
+    parallelism: 1
+    docker:
+      - image: circleci/rust:latest
+      - image: amazon/dynamodb-local
+    steps:
+      - checkout
+
+      - run:
+          name: install terraform
+          command: |
+            cd tmp
+            wget https://releases.hashicorp.com/terraform/0.12.1/terraform_0.12.1_linux_amd64.zip
+            unzip terraform_0.12.1_linux_amd64.zip
+            sudo mv terraform /usr/local/bin
+
+      - restore_cache:
+          keys:
+            - rust-{{ checksum "Cargo.lock" }}
+            - rust-
+
+      - run:
+          name: migration
+          command: |
+            cd terraform/test
+            terraform init
+            terraform apply -auto-approve
+      - run:
+          name: test
+          command: cargo test
+
+      - save_cache:
+          key: rust-{{ checksum "Cargo.lock" }}
+          paths:
+            - "~/.cargo"

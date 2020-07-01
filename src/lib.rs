@@ -15,5 +15,6 @@ pub use client::*;
 pub use data::*;
 pub use error::*;
 pub use locker::*;
+use std::sync::mpsc::{channel, Receiver, RecvError, Sender};
 
 pub type LockerResult<T> = Result<T, LockerError>;
