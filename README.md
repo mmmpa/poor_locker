@@ -8,7 +8,7 @@ Slack sends same event multiple times when we don't or not immediately return 20
 
 Our responses often delay enough for Slack to re-send events due to Cold Starting.
 
-```rs
+```rust
 use crate::{DynamoLockStoreClient, DynamoLockerClient, LockKey, Locker};
 use rusoto_core::Region;
 use rusoto_dynamodb::DynamoDbClient;
