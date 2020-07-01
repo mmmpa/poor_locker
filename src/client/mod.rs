@@ -32,7 +32,7 @@ mod tests {
             gen_dynamo_client(),
             "poor-locker-test-lock-table".to_string(),
         ));
-        (store, 10).into()
+        (store, 100).into()
     }
 
     #[tokio::test]
@@ -123,7 +123,7 @@ mod tests {
             let a = a.clone();
             tokio::spawn(async move {
                 cli.work_with_wait_lock(key, 10, || async {
-                    tokio::time::delay_for(Duration::from_millis(20)).await;
+                    tokio::time::delay_for(Duration::from_millis(200)).await;
                     a.write().await.push(11);
                 })
                 .await
@@ -137,7 +137,7 @@ mod tests {
             let a = a.clone();
             tokio::spawn(async move {
                 tokio::time::delay_for(Duration::from_millis(10)).await;
-                cli.work_with_wait_lock(key, 100, || async {
+                cli.work_with_wait_lock(key, 1000, || async {
                     a.write().await.push(24);
                 })
                 .await
