@@ -2,7 +2,6 @@ use crate::{LockKey, LockerError, LockerResult};
 use async_trait::async_trait;
 use futures::Future;
 use std::cmp::min;
-use tokio::macros::support::Pin;
 use tokio::time::Duration;
 
 #[async_trait]
@@ -25,7 +24,7 @@ pub trait Locker: Clone + Send + Sync + 'static {
         self.store().unlock(key).await
     }
 
-    async fn wait(&self, key: LockKey, mut ms: u64) -> LockerResult<()> {
+    async fn wait(&self, key: LockKey, ms: u64) -> LockerResult<()> {
         let mut rest = ms;
         let mut delay = self.delay();
 
@@ -48,8 +47,6 @@ pub trait Locker: Clone + Send + Sync + 'static {
                 rest -= delay;
             }
         }
-
-        unreachable!()
     }
 
     async fn work_with_wait_lock<F, R, Fut>(&self, key: LockKey, secs: u64, f: F) -> LockerResult<R>

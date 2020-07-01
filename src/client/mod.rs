@@ -4,10 +4,7 @@ pub use dynamo_client::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        DynamoLockStoreClient, DynamoLockerClient, LockKey, LockStore, Locker, LockerError,
-    };
-    use futures::AsyncWriteExt;
+    use crate::{DynamoLockStoreClient, DynamoLockerClient, LockKey, Locker, LockerError};
     use rs_ttb;
     use rusoto_core::{HttpClient, Region};
     use rusoto_credential::StaticProvider;
@@ -65,8 +62,7 @@ mod tests {
     #[tokio::test]
     async fn test_wait() {
         let cli = create_cli();
-
-        let mut a = Arc::new(RwLock::new(Vec::<usize>::new()));
+        let a = Arc::new(RwLock::new(Vec::<usize>::new()));
 
         let lock_key = LockKey::from(rs_ttb::random_string(12));
         cli.lock(lock_key.clone()).await.unwrap();
@@ -74,15 +70,15 @@ mod tests {
         let thread = {
             let cli = cli.clone();
             let key = lock_key.clone();
-            let mut a = a.clone();
+            let a = a.clone();
             tokio::spawn(async move {
-                cli.wait(key, 100).await;
+                cli.wait(key, 100).await.unwrap();
                 a.write().await.push(24);
             })
         };
 
         a.write().await.push(11);
-        cli.unlock(lock_key).await;
+        cli.unlock(lock_key).await.unwrap();
 
         futures::future::join_all(vec![thread]).await;
 
@@ -92,8 +88,7 @@ mod tests {
     #[tokio::test]
     async fn test_wait_abort() {
         let cli = create_cli();
-
-        let mut a = Arc::new(RwLock::new(Vec::<usize>::new()));
+        let a = Arc::new(RwLock::new(Vec::<usize>::new()));
 
         let lock_key = LockKey::from(rs_ttb::random_string(12));
         cli.lock(lock_key.clone()).await.unwrap();
@@ -101,7 +96,7 @@ mod tests {
         let thread = {
             let cli = cli.clone();
             let key = lock_key.clone();
-            let mut a = a.clone();
+            let a = a.clone();
             tokio::spawn(async move {
                 cli.wait(key, 1).await?;
                 a.write().await.push(24);
@@ -118,34 +113,35 @@ mod tests {
     #[tokio::test]
     async fn test_wait_work() {
         let cli = create_cli();
-
-        let mut a = Arc::new(RwLock::new(Vec::<usize>::new()));
+        let a = Arc::new(RwLock::new(Vec::<usize>::new()));
 
         let lock_key = LockKey::from(rs_ttb::random_string(12));
 
         let thread_a = {
             let cli = cli.clone();
             let key = lock_key.clone();
-            let mut a = a.clone();
+            let a = a.clone();
             tokio::spawn(async move {
                 cli.work_with_wait_lock(key, 10, || async {
                     tokio::time::delay_for(Duration::from_millis(20)).await;
                     a.write().await.push(11);
                 })
-                .await;
+                .await
+                .unwrap();
             })
         };
 
         let thread_b = {
             let cli = cli.clone();
             let key = lock_key.clone();
-            let mut a = a.clone();
+            let a = a.clone();
             tokio::spawn(async move {
                 tokio::time::delay_for(Duration::from_millis(10)).await;
                 cli.work_with_wait_lock(key, 100, || async {
                     a.write().await.push(24);
                 })
-                .await;
+                .await
+                .unwrap();
             })
         };
 

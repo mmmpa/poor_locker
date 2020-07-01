@@ -1,12 +1,4 @@
-use crate::{DynamoLockStoreClient, LockKey, LockStore, Locker, LockerError, LockerResult};
-use async_trait::async_trait;
-use rusoto_core::RusotoError;
-use rusoto_dynamodb::{
-    AttributeValue, DeleteItemError, DeleteItemInput, DeleteItemOutput, DynamoDb, DynamoDbClient,
-    PutItemError, PutItemInput, PutItemOutput,
-};
-use serde::export::Formatter;
-use std::collections::HashMap;
+use crate::{DynamoLockStoreClient, Locker};
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]

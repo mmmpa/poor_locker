@@ -1,12 +1,10 @@
-use crate::{LockKey, LockStore, Locker, LockerError, LockerResult};
+use crate::{LockKey, LockStore, LockerError, LockerResult};
 use async_trait::async_trait;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::{
-    AttributeValue, DeleteItemError, DeleteItemInput, DeleteItemOutput, DynamoDb, DynamoDbClient,
-    PutItemError, PutItemInput, PutItemOutput,
+    AttributeValue, DeleteItemInput, DynamoDb, DynamoDbClient, PutItemError, PutItemInput,
 };
 use serde::export::Formatter;
-use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -30,7 +28,7 @@ impl From<(DynamoDbClient, String)> for DynamoLockStoreClient {
 
 impl std::fmt::Debug for DynamoLockStoreClient {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "DynamoLockStoreClient {{ MASKED }}");
+        write!(f, "DynamoLockStoreClient {{ MASKED }}").unwrap();
         Ok(())
     }
 }
