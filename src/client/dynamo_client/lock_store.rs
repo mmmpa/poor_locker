@@ -35,11 +35,6 @@ impl DynamoLockStoreClient {
         }
     }
 
-    fn expression(&self) -> Option<String> {
-        let ex = format!("attribute_not_exists({})", self.status_attribute_name);
-        Some(ex)
-    }
-
     fn table(&self) -> String {
         self.table_name.clone()
     }
@@ -68,12 +63,12 @@ impl DynamoLockStoreClient {
         item
     }
 
-    fn create_lock_item(&self, key: LockKey) -> HashMap<String, AttributeValue> {
+    fn create_lock_item(&self, key: LockKey, n: usize) -> HashMap<String, AttributeValue> {
         let mut item = self.create_key_item(key);
         item.insert(
             self.status_attr(),
             AttributeValue {
-                bool: true.into(),
+                n: n.to_string().into(),
                 ..Default::default()
             },
         );
@@ -87,11 +82,40 @@ impl DynamoLockStoreClient {
         item
     }
 
-    fn create_put_item(&self, key: LockKey) -> PutItemInput {
+    fn create_first_lock_expression(&self) -> Option<String> {
+        let ex = format!("attribute_not_exists({})", self.status_attribute_name);
+        Some(ex)
+    }
+
+    fn create_first_lock_input(&self, key: LockKey) -> PutItemInput {
         PutItemInput {
-            condition_expression: self.expression(),
-            item: self.create_lock_item(key),
+            condition_expression: self.create_first_lock_expression(),
+            item: self.create_lock_item(key, 1),
             table_name: self.table(),
+            ..Default::default()
+        }
+    }
+
+    fn create_second_lock_expression(&self) -> Option<String> {
+        let ex = format!("{} = :n", self.status_attribute_name);
+        Some(ex)
+    }
+
+    fn create_second_lock_input(&self, key: LockKey) -> PutItemInput {
+        let mut item = HashMap::new();
+        item.insert(
+            ":n".to_string(),
+            AttributeValue {
+                n: "1".to_string().into(),
+                ..Default::default()
+            },
+        );
+
+        PutItemInput {
+            condition_expression: self.create_second_lock_expression(),
+            item: self.create_lock_item(key, 2),
+            table_name: self.table(),
+            expression_attribute_values: Some(item),
             ..Default::default()
         }
     }
@@ -100,7 +124,25 @@ impl DynamoLockStoreClient {
 #[async_trait]
 impl LockStore for DynamoLockStoreClient {
     async fn lock(&self, key: LockKey) -> LockerResult<()> {
-        match self.cli.put_item(self.create_put_item(key.clone())).await {
+        match self
+            .cli
+            .put_item(self.create_first_lock_input(key.clone()))
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(RusotoError::Service(PutItemError::ConditionalCheckFailed(_))) => {
+                Err(LockerError::AlreadyLocked(key))
+            }
+            Err(e) => Err(LockerError::AccessError(e.to_string())),
+        }
+    }
+
+    async fn lock_if_locked(&self, key: LockKey) -> LockerResult<()> {
+        match self
+            .cli
+            .put_item(self.create_second_lock_input(key.clone()))
+            .await
+        {
             Ok(_) => Ok(()),
             Err(RusotoError::Service(PutItemError::ConditionalCheckFailed(_))) => {
                 Err(LockerError::AlreadyLocked(key))

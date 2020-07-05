@@ -16,6 +16,10 @@ pub trait Locker: Clone + Send + Sync + 'static {
         self.lock(key).await
     }
 
+    async fn allow_only_second_comer(&self, key: LockKey) -> LockerResult<()> {
+        self.store().lock_if_locked(key).await
+    }
+
     async fn lock(&self, key: LockKey) -> LockerResult<()> {
         self.store().lock(key).await
     }
@@ -65,5 +69,6 @@ pub trait Locker: Clone + Send + Sync + 'static {
 #[async_trait]
 pub trait LockStore: Clone + Send + Sync + 'static {
     async fn lock(&self, key: LockKey) -> LockerResult<()>;
+    async fn lock_if_locked(&self, key: LockKey) -> LockerResult<()>;
     async fn unlock(&self, key: LockKey) -> LockerResult<()>;
 }

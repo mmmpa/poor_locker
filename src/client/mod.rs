@@ -60,6 +60,27 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_lock_twice() {
+        let cli = create_cli();
+        let lock_key = LockKey::from(rs_ttb::random_string(12));
+
+        let re = cli.allow_only_second_comer(lock_key.clone()).await;
+        assert!(re.is_err(), "{:?}", re);
+
+        let re = cli.allow_only_first_comer(lock_key.clone()).await;
+        assert!(re.is_ok(), "{:?}", re);
+
+        let re = cli.allow_only_second_comer(lock_key.clone()).await;
+        assert!(re.is_ok(), "{:?}", re);
+
+        let re = cli.allow_only_second_comer(lock_key.clone()).await;
+        assert!(re.is_err(), "{:?}", re);
+
+        let re = cli.allow_only_first_comer(lock_key.clone()).await;
+        assert!(re.is_err(), "{:?}", re);
+    }
+
+    #[tokio::test]
     async fn test_wait() {
         let cli = create_cli();
         let a = Arc::new(RwLock::new(Vec::<usize>::new()));
