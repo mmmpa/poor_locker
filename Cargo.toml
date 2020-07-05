@@ -11,6 +11,7 @@ wrapped_string_type_macro = { git = "https://github.com/mmmpa/wrapped_string_typ
 async-trait = "0.1.31"
 tokio = { version = "0.2", features = ["sync", "macros", "time", "fs"] }
 futures = "0.3.5"
+chrono = "0.4.12"
 
 serde = { version = "^1.0.105", features = ["derive", "rc"] }
 serde_json = "1.0"

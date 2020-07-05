@@ -28,11 +28,11 @@ mod tests {
     }
 
     fn create_cli() -> DynamoLockerClient {
-        let store = DynamoLockStoreClient::from((
+        let store = DynamoLockStoreClient::new(
             gen_dynamo_client(),
             "poor-locker-test-lock-table".to_string(),
-        ));
-        (store, 100).into()
+        );
+        DynamoLockerClient::new(store, 100)
     }
 
     #[tokio::test]

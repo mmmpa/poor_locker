@@ -1,5 +1,6 @@
 use crate::{LockKey, LockStore, LockerError, LockerResult};
 use async_trait::async_trait;
+use chrono::Utc;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::{
     AttributeValue, DeleteItemInput, DynamoDb, DynamoDbClient, PutItemError, PutItemInput,
@@ -13,17 +14,7 @@ pub struct DynamoLockStoreClient {
     pub table_name: String,
     pub id_attribute_name: String,
     pub status_attribute_name: String,
-}
-
-impl From<(DynamoDbClient, String)> for DynamoLockStoreClient {
-    fn from((cli, table_name): (DynamoDbClient, String)) -> Self {
-        Self {
-            cli,
-            table_name,
-            id_attribute_name: "hash_key".to_string(),
-            status_attribute_name: "locked".to_string(),
-        }
-    }
+    pub locked_at_attribute_name: String,
 }
 
 impl std::fmt::Debug for DynamoLockStoreClient {
@@ -34,6 +25,16 @@ impl std::fmt::Debug for DynamoLockStoreClient {
 }
 
 impl DynamoLockStoreClient {
+    pub fn new(cli: DynamoDbClient, table_name: String) -> Self {
+        Self {
+            cli,
+            table_name,
+            id_attribute_name: "hash_key".to_string(),
+            status_attribute_name: "locked".to_string(),
+            locked_at_attribute_name: "locked_at".to_string(),
+        }
+    }
+
     fn expression(&self) -> Option<String> {
         let ex = format!("attribute_not_exists({})", self.status_attribute_name);
         Some(ex)
@@ -49,6 +50,10 @@ impl DynamoLockStoreClient {
 
     fn status_attr(&self) -> String {
         self.status_attribute_name.clone()
+    }
+
+    fn at_attr(&self) -> String {
+        self.locked_at_attribute_name.clone()
     }
 
     fn create_key_item(&self, key: LockKey) -> HashMap<String, AttributeValue> {
@@ -69,6 +74,13 @@ impl DynamoLockStoreClient {
             self.status_attr(),
             AttributeValue {
                 bool: true.into(),
+                ..Default::default()
+            },
+        );
+        item.insert(
+            self.at_attr(),
+            AttributeValue {
+                n: Utc::now().timestamp().to_string().into(),
                 ..Default::default()
             },
         );

@@ -10,14 +10,8 @@ struct DynamoLockerClientInner {
     delay: u64,
 }
 
-impl From<DynamoLockStoreClient> for DynamoLockerClient {
-    fn from(store: DynamoLockStoreClient) -> Self {
-        Self(Arc::new(DynamoLockerClientInner { store, delay: 500 }))
-    }
-}
-
-impl From<(DynamoLockStoreClient, u64)> for DynamoLockerClient {
-    fn from((store, delay): (DynamoLockStoreClient, u64)) -> Self {
+impl DynamoLockerClient {
+    pub fn new(store: DynamoLockStoreClient, delay: u64) -> Self {
         Self(Arc::new(DynamoLockerClientInner { store, delay }))
     }
 }
