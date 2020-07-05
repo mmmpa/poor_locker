@@ -145,7 +145,7 @@ impl LockStore for DynamoLockStoreClient {
         {
             Ok(_) => Ok(()),
             Err(RusotoError::Service(PutItemError::ConditionalCheckFailed(_))) => {
-                Err(LockerError::AlreadyLocked(key))
+                Err(LockerError::NotExistsFirstLockOrAlreadyLocked(key))
             }
             Err(e) => Err(LockerError::AccessError(e.to_string())),
         }

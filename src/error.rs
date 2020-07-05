@@ -5,6 +5,7 @@ use std::error::Error;
 pub enum LockerError {
     Timeout,
     AlreadyLocked(LockKey),
+    NotExistsFirstLockOrAlreadyLocked(LockKey),
     AlreadyUnlocked(LockKey),
     MaybeAlreadyUnlocked(LockKey),
     AccessError(String),
